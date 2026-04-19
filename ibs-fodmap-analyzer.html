@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FODMAP Menu Analyzer</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --cream: #FAF6F0;
+    --sand: #EDE4D4;
+    --green-deep: #2D5016;
+    --green-mid: #4A7C2F;
+    --green-light: #8DB87A;
+    --green-pale: #D6E8CA;
+    --amber: #C8873A;
+    --red-soft: #C85A3A;
+    --text: #1A1A1A;
+    --muted: #6B6B6B;
+    --white: #FFFFFF;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  header {
+    background: var(--green-deep);
+    color: var(--cream);
+    padding: 20px 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  header .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    letter-spacing: -0.5px;
+  }
+
+  header .logo span {
+    color: var(--green-light);
+    font-style: italic;
+  }
+
+  header p {
+    font-size: 0.8rem;
+    opacity: 0.65;
+    margin-top: 2px;
+    font-weight: 300;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+    padding: 40px 24px;
+  }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed var(--green-light);
+    border-radius: 16px;
+    background: var(--white);
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+  }
+
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: var(--green-mid);
+    background: var(--green-pale);
+    transform: translateY(-2px);
+  }
+
+  .upload-zone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%;
+    height: 100%;
+  }
+
+  .upload-icon {
+    width: 56px;
+    height: 56px;
+    background: var(--green-pale);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+    font-size: 1.6rem;
+  }
+
+  .upload-zone h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--green-deep);
+    margin-bottom: 8px;
+  }
+
+  .upload-zone p { color: var(--muted); font-size: 0.875rem; }
+
+  .btn {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 10px 24px;
+    background: var(--green-deep);
+    color: var(--cream);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn:hover { background: var(--green-mid); }
+
+  /* Preview & overlay */
+  .preview-section { display: none; margin-top: 32px; }
+  .preview-section.visible { display: block; }
+
+  .image-overlay-container {
+    position: relative;
+    width: 100%;
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--sand);
+    line-height: 0;
+  }
+
+  .overlay-img {
+    width: 100%;
+    height: auto;
+    display: block;
+    border-radius: 12px;
+  }
+
+  /* Vivino-style score pill */
+  .score-pill {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    border: 2.5px solid rgba(255,255,255,0.92);
+    color: white;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 18px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.2);
+    transition: transform 0.18s ease, box-shadow 0.18s ease;
+    z-index: 10;
+    animation: popIn 0.3s ease backwards;
+    background: none;
+    padding: 0;
+  }
+
+  .score-pill:hover {
+    transform: translate(-50%, -50%) scale(1.18);
+    box-shadow: 0 6px 28px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.2);
+  }
+
+  .score-pill:focus { outline: none; }
+
+  .pill-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .pill-lbl {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.43rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    opacity: 0.85;
+    margin-top: 1px;
+  }
+
+  .pill-safe     { background: var(--green-mid); }
+  .pill-moderate { background: var(--amber); }
+  .pill-avoid    { background: var(--red-soft); }
+
+  /* Hint label under image */
+  .overlay-hint {
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    margin-top: 10px;
+    display: none;
+  }
+
+  .overlay-hint.visible { display: block; }
+
+  /* Analyze button */
+  .analyze-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    background: var(--green-deep);
+    color: var(--cream);
+    border: none;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+    letter-spacing: 0.3px;
+  }
+
+  .analyze-btn:hover { background: var(--green-mid); }
+  .analyze-btn:active { transform: scale(0.99); }
+  .analyze-btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  /* Loading */
+  .loading-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(250,246,240,0.82);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    z-index: 20;
+    backdrop-filter: blur(2px);
+  }
+
+  .loading-overlay.visible { display: flex; }
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid var(--sand);
+    border-top-color: var(--green-mid);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 14px;
+  }
+
+  .loading-overlay p {
+    color: var(--green-deep);
+    font-size: 0.9rem;
+    font-weight: 500;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Dish popover */
+  .popover-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+  }
+
+  .dish-popover {
+    position: fixed;
+    background: var(--white);
+    border-radius: 16px;
+    box-shadow: 0 16px 56px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.08);
+    width: 296px;
+    z-index: 1000;
+    overflow: hidden;
+    animation: popIn 0.2s ease;
+  }
+
+  .popover-header {
+    background: var(--green-deep);
+    color: var(--cream);
+    padding: 16px 20px 14px;
+    position: relative;
+  }
+
+  .pop-dish-name {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.05rem;
+    line-height: 1.3;
+    padding-right: 22px;
+    margin-bottom: 10px;
+  }
+
+  .pop-score-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .pop-score-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    line-height: 1;
+  }
+
+  .pop-score-sub {
+    font-size: 0.7rem;
+    opacity: 0.55;
+    margin-top: 2px;
+  }
+
+  .pop-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+  }
+
+  .pop-badge-safe     { background: var(--green-pale); color: var(--green-deep); }
+  .pop-badge-moderate { background: #FEF3C7; color: #92400E; }
+  .pop-badge-avoid    { background: #FEE2E2; color: #991B1B; }
+
+  .pop-close {
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    background: none;
+    border: none;
+    color: var(--cream);
+    font-size: 1.25rem;
+    cursor: pointer;
+    opacity: 0.65;
+    line-height: 1;
+    padding: 0;
+    transition: opacity 0.15s;
+  }
+
+  .pop-close:hover { opacity: 1; }
+
+  .popover-body {
+    padding: 16px 20px 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+  }
+
+  .pop-summary {
+    font-size: 0.83rem;
+    color: var(--muted);
+    line-height: 1.55;
+    margin-bottom: 14px;
+  }
+
+  .pop-section-title {
+    font-size: 0.68rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 7px;
+    margin-top: 14px;
+  }
+
+  .pop-section-title:first-of-type { margin-top: 0; }
+
+  .pop-tag {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 5px;
+    font-size: 0.79rem;
+    margin: 2px;
+  }
+
+  .tag-safe   { background: var(--green-pale); color: var(--green-deep); }
+  .tag-danger { background: #FEE2E2; color: #991B1B; }
+
+  .pop-tips {
+    margin-top: 14px;
+    border-top: 1px solid var(--sand);
+    padding-top: 14px;
+  }
+
+  .pop-tips ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .pop-tips li {
+    font-size: 0.81rem;
+    line-height: 1.45;
+    color: var(--muted);
+    padding-left: 14px;
+    position: relative;
+  }
+
+  .pop-tips li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--green-mid);
+  }
+
+  /* Misc */
+  .error-box {
+    background: #FEE2E2;
+    color: #991B1B;
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-size: 0.875rem;
+    margin-top: 16px;
+    display: none;
+    word-break: break-word;
+  }
+
+  .reset-btn {
+    background: none;
+    border: 1.5px solid var(--sand);
+    color: var(--muted);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: all 0.2s;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .reset-btn:hover { border-color: var(--green-light); color: var(--green-deep); }
+
+  .disclaimer {
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 32px;
+    line-height: 1.5;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.85) translate(-50%, -50%); }
+    to   { opacity: 1; transform: scale(1)    translate(-50%, -50%); }
+  }
+
+  /* popIn for popover (no translate override) */
+  .dish-popover { animation: fadeScale 0.2s ease; }
+  @keyframes fadeScale {
+    from { opacity: 0; transform: scale(0.92); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="logo">gut<span>wise</span></div>
+    <p>FODMAP Menu Analyzer · IBS-Friendly Scoring</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="upload-zone" id="uploadZone">
+    <input type="file" id="fileInput" accept="image/*" capture="environment">
+    <div class="upload-icon">📷</div>
+    <h2>Upload a Menu Photo</h2>
+    <p>Take a photo of a menu or dish and we'll score each item for IBS friendliness based on the FODMAP diet.</p>
+    <button class="btn" onclick="event.stopPropagation(); document.getElementById('fileInput').click()">Choose Photo</button>
+  </div>
+
+  <div class="preview-section" id="previewSection">
+    <div class="image-overlay-container" id="imageOverlayContainer">
+      <img id="previewImg" class="overlay-img" src="" alt="Menu preview">
+      <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+        <p>Scoring dishes…</p>
+      </div>
+    </div>
+    <p class="overlay-hint" id="overlayHint">Tap a score badge to see trigger ingredients</p>
+
+    <button class="analyze-btn" id="analyzeBtn" onclick="analyze()">🔍 Analyze with FODMAP Scoring</button>
+    <div class="error-box" id="errorBox"></div>
+    <div style="text-align:center">
+      <button class="reset-btn" onclick="reset()">↩ Upload a different photo</button>
+    </div>
+  </div>
+
+  <p class="disclaimer">For informational purposes only. Always consult a registered dietitian for personalized IBS dietary advice.</p>
+</div>
+
+<script>
+  let imageBase64 = null;
+  let imageMediaType = 'image/jpeg';
+
+  const fileInput    = document.getElementById('fileInput');
+  const uploadZone   = document.getElementById('uploadZone');
+  const previewSection = document.getElementById('previewSection');
+  const previewImg   = document.getElementById('previewImg');
+  const analyzeBtn   = document.getElementById('analyzeBtn');
+  const errorBox     = document.getElementById('errorBox');
+  const loadingOverlay = document.getElementById('loadingOverlay');
+  const overlayHint  = document.getElementById('overlayHint');
+  const overlayContainer = document.getElementById('imageOverlayContainer');
+
+  fileInput.addEventListener('change', e => {
+    const file = e.target.files[0];
+    if (file) loadImage(file);
+  });
+
+  uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+  uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+  uploadZone.addEventListener('drop', e => {
+    e.preventDefault();
+    uploadZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadImage(file);
+  });
+
+  function loadImage(file) {
+    imageMediaType = file.type || 'image/jpeg';
+    const reader = new FileReader();
+    reader.onload = e => {
+      imageBase64 = e.target.result.split(',')[1];
+      previewImg.src = e.target.result;
+      previewSection.classList.add('visible');
+      uploadZone.style.display = 'none';
+      errorBox.style.display = 'none';
+      clearBadges();
+      overlayHint.classList.remove('visible');
+      analyzeBtn.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function reset() {
+    imageBase64 = null;
+    fileInput.value = '';
+    previewSection.classList.remove('visible');
+    uploadZone.style.display = 'block';
+    errorBox.style.display = 'none';
+    clearBadges();
+    overlayHint.classList.remove('visible');
+    closePopover();
+  }
+
+  function clearBadges() {
+    overlayContainer.querySelectorAll('.score-pill').forEach(b => b.remove());
+  }
+
+  async function analyze() {
+    if (!imageBase64) return;
+
+    analyzeBtn.disabled = true;
+    analyzeBtn.textContent = 'Analyzing…';
+    errorBox.style.display = 'none';
+    clearBadges();
+    overlayHint.classList.remove('visible');
+    loadingOverlay.classList.add('visible');
+    closePopover();
+
+    try {
+      const resp = await fetch('/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: imageBase64, media_type: imageMediaType })
+      });
+
+      const json = await resp.json();
+      if (!resp.ok) throw new Error(json.error || `Server error ${resp.status}`);
+
+      if (json.error || !json.dishes || json.dishes.length === 0) {
+        showError('Could not identify any food items. Please try a clearer menu or dish photo.');
+        return;
+      }
+
+      renderBadges(json.dishes);
+      analyzeBtn.style.display = 'none';
+
+    } catch (err) {
+      showError(err.message || String(err));
+      console.error(err);
+    } finally {
+      loadingOverlay.classList.remove('visible');
+      analyzeBtn.disabled = false;
+      analyzeBtn.textContent = '🔍 Analyze with FODMAP Scoring';
+    }
+  }
+
+  function showError(msg) {
+    errorBox.textContent = msg;
+    errorBox.style.display = 'block';
+  }
+
+  function pillClass(score) {
+    return score >= 80 ? 'pill-safe' : score >= 50 ? 'pill-moderate' : 'pill-avoid';
+  }
+
+  function badgeClass(score) {
+    return score >= 80 ? 'pop-badge-safe' : score >= 50 ? 'pop-badge-moderate' : 'pop-badge-avoid';
+  }
+
+  function ratingEmoji(rating) {
+    return rating === 'Safe' ? '✅' : rating === 'Moderate' ? '⚠️' : '🚫';
+  }
+
+  function renderBadges(dishes) {
+    dishes.forEach((dish, i) => {
+      const pill = document.createElement('button');
+      pill.className = `score-pill ${pillClass(dish.score)}`;
+      pill.style.left  = dish.position.x + '%';
+      pill.style.top   = dish.position.y + '%';
+      pill.style.animationDelay = (i * 0.12) + 's';
+      pill.innerHTML = `
+        <span class="pill-num">${dish.score}</span>
+        <span class="pill-lbl">FODMAP</span>
+      `;
+      pill.addEventListener('click', e => {
+        e.stopPropagation();
+        showPopover(dish, pill);
+      });
+      overlayContainer.appendChild(pill);
+    });
+
+    overlayHint.classList.add('visible');
+  }
+
+  function showPopover(dish, pillEl) {
+    closePopover();
+
+    // Backdrop to close on outside click
+    const backdrop = document.createElement('div');
+    backdrop.id = 'popoverBackdrop';
+    backdrop.className = 'popover-backdrop';
+    backdrop.addEventListener('click', closePopover);
+    document.body.appendChild(backdrop);
+
+    const safeHTML = (dish.safe_ingredients || [])
+      .map(i => `<span class="pop-tag tag-safe">${i}</span>`).join('');
+    const triggerHTML = (dish.problematic_ingredients || [])
+      .map(i => `<span class="pop-tag tag-danger">${i}</span>`).join('');
+    const tipsHTML = (dish.modification_tips || [])
+      .map(t => `<li>${t}</li>`).join('');
+
+    const pop = document.createElement('div');
+    pop.id = 'dishPopover';
+    pop.className = 'dish-popover';
+    pop.innerHTML = `
+      <div class="popover-header">
+        <button class="pop-close" onclick="closePopover()">×</button>
+        <div class="pop-dish-name">${dish.dish_name}</div>
+        <div class="pop-score-row">
+          <div>
+            <div class="pop-score-num">${dish.score}</div>
+            <div class="pop-score-sub">/ 100</div>
+          </div>
+          <span class="pop-badge ${badgeClass(dish.score)}">${ratingEmoji(dish.rating)} ${dish.rating}</span>
+        </div>
+      </div>
+      <div class="popover-body">
+        <p class="pop-summary">${dish.summary}</p>
+
+        ${triggerHTML ? `
+          <div class="pop-section-title">🚨 IBS Trigger Ingredients</div>
+          <div>${triggerHTML}</div>
+        ` : ''}
+
+        ${safeHTML ? `
+          <div class="pop-section-title">✅ Safe Ingredients</div>
+          <div>${safeHTML}</div>
+        ` : ''}
+
+        ${tipsHTML ? `
+          <div class="pop-tips">
+            <div class="pop-section-title">How to make it safer</div>
+            <ul>${tipsHTML}</ul>
+          </div>
+        ` : ''}
+      </div>
+    `;
+
+    document.body.appendChild(pop);
+
+    // Position popover near the badge, staying in viewport
+    const rect = pillEl.getBoundingClientRect();
+    const pw = 296, margin = 12;
+    let left = rect.right + margin;
+    let top  = rect.top - 20;
+
+    if (left + pw > window.innerWidth - margin) {
+      left = rect.left - pw - margin;
+    }
+    if (left < margin) left = margin;
+
+    const ph = pop.offsetHeight;
+    if (top + ph > window.innerHeight - margin) {
+      top = window.innerHeight - ph - margin;
+    }
+    if (top < margin) top = margin;
+
+    pop.style.left = left + 'px';
+    pop.style.top  = top  + 'px';
+  }
+
+  function closePopover() {
+    document.getElementById('dishPopover')?.remove();
+    document.getElementById('popoverBackdrop')?.remove();
+  }
+</script>
+</body>
+</html>
